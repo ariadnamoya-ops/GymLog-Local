@@ -9,8 +9,8 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 - **Rutina:** asigna máquinas a cada día de la semana.
 - **Máquinas:** añade, renombra y borra.
 - **Progreso:** gráficas por máquina de mejor peso, volumen y 1RM estimado.
-- **Historial:** mejor peso y sesiones por máquina.
-- **Copia de seguridad:** guarda una copia con un toque (menú compartir de iOS/Android), cópiala como texto o restáurala; la app te avisa si llevas más de 7 días sin copia.
+- **Historial:** mejor peso y sesiones por máquina, también de máquinas borradas (sus registros no se eliminan).
+- **Copia de seguridad:** exporta, copia como texto y restaura copias validadas. En web usa compartir/descarga según el navegador; en APK usa los plugins nativos indicados abajo. La app avisa si llevas más de 7 días sin copia.
 - **Tema:** negro con acento morado oscuro.
 
 ## Usarla en el móvil
@@ -19,18 +19,27 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 3. **iPhone (Safari):** Compartir → Añadir a pantalla de inicio.
    **Android (Chrome):** menú ⋮ → Instalar app.
 
-## Crear el APK de Android (Capacitor)
+## Crear o actualizar el APK de Android (Capacitor)
+Ejecuta estos comandos desde la carpeta del proyecto. Si ya tienes el proyecto Capacitor creado, no repitas `npx cap init` ni `npx cap add android`.
+
 ```bash
 npm init -y
-npm i @capacitor/core @capacitor/cli @capacitor/android
+npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
 npx cap init GymLog com.ariadnamoya.gymlog --web-dir=www
-mkdir www && cp index.html manifest.webmanifest sw.js *.png www/
+mkdir -p www
+cp index.html manifest.webmanifest sw.js *.png www/
 npx cap add android
-npx cap open android   # Build → Build APK(s)
+npx cap sync android
+npx cap open android
 ```
+
+**Cada vez que cambies `index.html`, `sw.js`, el manifiesto o los iconos:** copia los archivos actualizados a `www/` y ejecuta `npx cap sync android` antes de generar un APK nuevo. Si tu proyecto ya existe, instala los plugins con `npm i @capacitor/filesystem @capacitor/share` y ejecuta `npx cap sync android`.
+
+La copia nativa busca `Filesystem` y `Share` expuestos en `window.Capacitor.Plugins`. Si el proyecto usa una versión de Capacitor que no expone ese puente global, importa y registra ambos plugins en el punto de entrada JavaScript de tu proyecto; una página HTML sin empaquetar no puede importar directamente los módulos npm. En ese caso, prueba también la opción «Copiar texto» como alternativa.
+
 
 ## Iconos
 `icon-192.png`, `icon-512.png` y `apple-touch-icon.png` son reemplazables por los tuyos con el mismo nombre.
 
 ## Datos
-Todo se guarda en `localStorage`. Si borras los datos del navegador los pierdes: exporta copias de vez en cuando.
+Los datos se guardan en `localStorage` del navegador o WebView. La app intenta pedir almacenamiento persistente, pero el navegador puede no concederlo ni garantizar que los datos nunca se borren. Exporta copias periódicamente y guarda una fuera del dispositivo.

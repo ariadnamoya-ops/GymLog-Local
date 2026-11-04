@@ -21,7 +21,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc2);outl
 button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 .num{width:76px;text-align:center}
 .set{display:inline-block;background:var(--bg);border-radius:8px;padding:4px 9px;margin:6px 6px 0 0;font-weight:600}
-.set a{color:var(--mute);margin-left:4px;cursor:pointer}
+.set a{color:var(--mute);margin-left:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:28px;min-height:28px;border-radius:6px}.set a:focus-visible{outline:2px solid var(--acc2)}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:6px 6px 0 0;font-size:14px}
 .chip a{color:var(--mute);cursor:pointer}
 .ico{flex:none;fill:none;stroke:var(--acc2);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.ico .e{stroke:var(--mute)}
@@ -41,8 +41,17 @@ const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"
 const def=()=>({machines:["Press de banca","Press inclinado","Jalón al pecho","Remo en polea","Prensa de piernas","Extensión de cuádriceps","Curl femoral","Press militar","Curl de bíceps","Cinta de correr"],
 routine:[["Press de banca","Press inclinado"],["Jalón al pecho","Remo en polea"],[],["Prensa de piernas","Extensión de cuádriceps","Curl femoral"],["Press militar","Curl de bíceps"],["Cinta de correr"],[]],logs:[]});
 let S;try{S=JSON.parse(localStorage.getItem("gymlog"))}catch(e){}
-S=S||def();
-const save=()=>{try{localStorage.setItem("gymlog",JSON.stringify(S))}catch(e){}};
+const drafts={};
+function normalizeState(raw){
+ const base=def(), d=raw&&typeof raw==="object"?raw:{};
+ const machines=Array.isArray(d.machines)?d.machines.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim()):base.machines;
+ const routine=Array.from({length:7},(_,i)=>Array.isArray(d.routine?.[i])?d.routine[i].filter(x=>typeof x==="string"&&machines.includes(x)):[]);
+ const logs=Array.isArray(d.logs)?d.logs.filter(l=>l&&typeof l==="object"&&typeof l.d==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(l.d)&&typeof l.m==="string"&&l.m.trim()&&Number.isFinite(Number(l.kg))&&Number(l.kg)>=0&&Number.isInteger(Number(l.r))&&Number(l.r)>0).map(l=>({d:l.d,m:l.m.trim(),kg:Number(l.kg),r:Number(l.r)})):[];
+ // Include deleted-machine names in history; their records must remain reachable.
+ return {machines:[...new Set(machines)],routine,logs,lastBackup:Number.isFinite(d.lastBackup)?d.lastBackup:null};
+}
+S=normalizeState(S||def());
+const save=()=>{try{localStorage.setItem("gymlog",JSON.stringify(S));return true}catch(e){alert("No se han podido guardar los datos. Puede que el almacenamiento esté lleno o bloqueado. Exporta una copia si todavía puedes.");return false}};
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=s=>document.querySelector(s);
 const key=()=>new Date().toLocaleDateString("sv");
@@ -117,8 +126,8 @@ function hoy(){
  (cur.length?cur.map((m,i)=>{
   const mine=S.logs.filter(l=>l.d===k&&l.m===m),p=[...S.logs].reverse().find(l=>l.m===m&&l.d!==k);
   return `<div class="card"><div class="row"><button class="ib" onclick="demo(cur[${i}])" aria-label="Ver cómo se hace">${ico(m,44)}</button><div class="grow"><h3>${esc(m)}</h3><span class="mute">${p?`Última: ${p.kg} kg × ${p.r}`:"Sin historial"}</span><div><a class="lk" onclick="demo(cur[${i}])">▶ Cómo se hace</a></div></div></div>
-  <div>${mine.map(l=>`<span class="set">${l.kg} kg × ${l.r}<a onclick="delSet(${S.logs.indexOf(l)})">✕</a></span>`).join("")}</div>
-  <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="number" inputmode="decimal" placeholder="kg" value="${mine.length?mine[mine.length-1].kg:p?p.kg:""}"><input class="num" id="r${i}" type="number" inputmode="numeric" placeholder="reps" value="${mine.length?mine[mine.length-1].r:p?p.r:""}"><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div></div>`}).join("")
+  <div>${mine.map(l=>`<span class="set">${l.kg} kg × ${l.r}<button class="ib" style="min-width:28px;min-height:28px;justify-content:center" aria-label="Borrar serie de ${esc(m)}" onclick="delSet(${S.logs.indexOf(l)})">✕</button></span>`).join("")}</div>
+  <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="kg" aria-label="Peso en kg" value="${esc(drafts["kg"+i]??(mine.length?mine[mine.length-1].kg:p?p.kg:""))}" oninput="drafts['kg${i}']=this.value"><input class="num" id="r${i}" type="text" inputmode="numeric" autocomplete="off" placeholder="reps" aria-label="Repeticiones" value="${esc(drafts["r"+i]??(mine.length?mine[mine.length-1].r:p?p.r:""))}" oninput="drafts['r${i}']=this.value"><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div></div>`}).join("")
   :`<div class="card mute">Día de descanso. Puedes asignar máquinas en Rutina o añadir una ahora.</div>`)+
  (rest.length?`<div class="card row"><select class="grow" id="ex">${opts(rest)}</select><button onclick="addEx()">Añadir a hoy</button></div>`:"");
 }
@@ -133,17 +142,18 @@ function maquinas(){
  S.machines.map((m,i)=>`<div class="card row sp"><span class="row"><button class="ib" onclick="demo(S.machines[${i}])" aria-label="Ver cómo se hace">${ico(m,32)}</button>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("");
 }
 function historial(){
- if(!hm||!S.machines.includes(hm))hm=S.machines[0]||"";
+ const names=[...new Set([...S.machines,...S.logs.map(l=>l.m)])];
+ if(!hm||!names.includes(hm))hm=names[0]||"";
  const L=S.logs.filter(l=>l.m===hm),days={};
  L.forEach(l=>(days[l.d]=days[l.d]||[]).push(l));
  const ds=Object.keys(days).sort().reverse(),best=L.reduce((a,l)=>Math.max(a,l.kg),0);
- return `<h1>Historial</h1><div class="card"><select id="hs" style="width:100%" onchange="hm=this.value;render()">${S.machines.map(m=>`<option ${m===hm?"selected":""}>${esc(m)}</option>`).join("")}</select>
+ return `<h1>Historial</h1><div class="card"><select id="hs" style="width:100%" onchange="hm=this.value;render()">${names.map(m=>`<option value="${esc(m)}" ${m===hm?"selected":""}>${esc(m)}${S.machines.includes(m)?"":" (borrada)"}</option>`).join("")}</select>
  ${L.length?`<p class="mute">Mejor peso: <b>${best} kg</b> · ${ds.length} sesiones</p>`:""}</div>`+
  (ds.length?ds.map(d=>`<div class="card"><div class="mute">${new Date(d+"T12:00").toLocaleDateString("es",{weekday:"long",day:"numeric",month:"short"})}</div>${days[d].map(l=>`<span class="set">${l.kg} kg × ${l.r}</span>`).join("")}</div>`).join(""):`<div class="card mute">Todavía no hay series de esta máquina.</div>`);
 }
 let pm="",met="kg";
 function progreso(){
- const ms=S.machines.filter(m=>S.logs.some(l=>l.m===m));
+ const ms=[...new Set(S.logs.map(l=>l.m))];
  if(!ms.length)return `<h1>Progreso</h1><div class="card mute">Registra series en Hoy y aquí verás cómo evolucionas en cada máquina.</div>`;
  if(!ms.includes(pm))pm=ms[0];
  const by={};S.logs.filter(l=>l.m===pm).forEach(l=>(by[l.d]=by[l.d]||[]).push(l));
@@ -172,10 +182,12 @@ function render(){
  $("#app").innerHTML={hoy,rutina,maquinas,progreso,historial}[v]();
  $("#nav").innerHTML=[["hoy","Hoy"],["rutina","Rutina"],["maquinas","Máquinas"],["progreso","Progreso"],["historial","Historial"]].map(([k,l])=>`<button class="${v===k?"on":""}" onclick="v='${k}';render();scrollTo(0,0)">${l}</button>`).join("");
 }
-function addSet(i){const kg=parseFloat($("#kg"+i).value),r=parseInt($("#r"+i).value);
- if(isNaN(kg)||isNaN(r)){alert("Indica peso y repeticiones.");return}
- S.logs.push({d:key(),m:cur[i],kg,r});save();render()}
-function delSet(i){S.logs.splice(i,1);save();render()}
+function parseDecimal(raw){const t=String(raw??"").trim().replace(/\s/g,"").replace(",",".");if(!t||!/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(t))return NaN;return Number(t)}
+function addSet(i){const kg=parseDecimal($("#kg"+i).value),rText=$("#r"+i).value.trim(),r=Number(rText);
+ if(!Number.isFinite(kg)||kg<0){alert("El peso debe ser un número igual o mayor que 0. Puedes usar coma o punto decimal.");return}
+ if(!/^\d+$/.test(rText)||!Number.isSafeInteger(r)||r<=0){alert("Las repeticiones deben ser un número entero mayor que 0.");return}
+ S.logs.push({d:key(),m:cur[i],kg,r});delete drafts["kg"+i];delete drafts["r"+i];save();render()}
+function delSet(i){if(!Number.isInteger(i)||!S.logs[i])return;if(!confirm("¿Quieres borrar esta serie?"))return;S.logs.splice(i,1);save();render()}
 function addEx(){extra.push($("#ex").value);render()}
 function addR(i){const m=$("#rs"+i).value;S.routine[i].push(m);save();render()}
 function delR(i,j){S.routine[i].splice(j,1);save();render()}
@@ -193,14 +205,26 @@ function bk(){return `<div class="card"><h3>Copia de seguridad</h3><p class="mut
  <label class="row" style="margin-top:8px"><span class="mute">Restaurar archivo</span><input class="grow" type="file" accept=".json,application/json" onchange="imp(this)"></label></div>`}
 function mark(){S.lastBackup=Date.now();save();render()}
 async function exp(){const name="gymlog-"+key()+".json",txt=JSON.stringify(S);
- try{const f=new File([txt],name,{type:"application/json"});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Copia GymLog"});mark();return}}catch(e){if(e&&e.name==="AbortError")return}
- const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"}));a.download=name;a.click();mark()}
+ try{
+  const cap=window.Capacitor,plugins=cap&&cap.Plugins,fs=plugins&&plugins.Filesystem,share=plugins&&plugins.Share;
+  if(cap&&cap.isNativePlatform&&cap.isNativePlatform()&&fs&&share){
+   const saved=await fs.writeFile({path:name,data:txt,directory:"DOCUMENTS",encoding:"utf8"});
+   await share.share({title:"Copia GymLog",text:"Copia de seguridad de GymLog",url:saved.uri||saved.path,dialogTitle:"Guardar copia de GymLog"});mark();return;
+  }
+  const f=new File([txt],name,{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Copia GymLog"});mark();return}
+ }catch(e){if(e&&e.name==="AbortError")return;alert("No se pudo compartir la copia. Puedes probar «Copiar texto» o revisar los permisos de almacenamiento.");return}
+ try{const url=URL.createObjectURL(new Blob([txt],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);mark()}catch(e){alert("No se pudo descargar la copia. Prueba «Copiar texto».")}}
 async function cpy(){try{await navigator.clipboard.writeText(JSON.stringify(S));mark();alert("Copiado. Pégalo en una nota o en un mensaje a ti mismo.")}catch(e){alert("No se pudo copiar. Usa Guardar copia.")}}
 function pas(){const t=prompt("Pega aquí el texto de tu copia");if(t)load(t)}
-function load(t){try{const d=JSON.parse(t);if(!d.machines||!d.routine||!d.logs)throw 0;if(!confirm("Esto reemplaza tus datos actuales. ¿Continuar?"))return;S=d;save();render();alert("Datos restaurados")}catch(e){alert("La copia no es válida")}}
+function load(t){try{const d=JSON.parse(t);if(!d||typeof d!=="object"||Array.isArray(d)||!Array.isArray(d.machines)||!Array.isArray(d.routine)||!Array.isArray(d.logs))throw new Error("formato");
+ if(d.machines.some(m=>typeof m!=="string"||!m.trim()||m.length>120)||d.routine.length>7||d.logs.length>100000)throw new Error("datos");
+ const next=normalizeState(d);if(!confirm("Esto reemplaza tus datos actuales. ¿Continuar?"))return;S=next;Object.keys(drafts).forEach(k=>delete drafts[k]);if(!save())return;render();alert("Copia restaurada correctamente")}catch(e){alert("La copia no es válida o está incompleta. No se han cambiado tus datos.")}}
 function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>load(r.result);r.readAsText(f);el.value=""}
 render();
+let renderedDay=key();
+function refreshDay(){const now=key();if(now!==renderedDay){renderedDay=now;extra=[];Object.keys(drafts).forEach(k=>delete drafts[k]);if(v==="hoy")render()}}
+setInterval(refreshDay,30000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshDay()});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script></body></html>
