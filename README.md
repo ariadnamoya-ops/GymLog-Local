@@ -9,8 +9,8 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 - **Rutina:** asigna máquinas a cada día de la semana.
 - **Máquinas:** añade, renombra y borra.
 - **Progreso:** gráficas por máquina de mejor peso, volumen y 1RM estimado.
-- **Historial:** mejor peso y sesiones por máquina, también de máquinas borradas (sus registros no se eliminan).
-- **Copia de seguridad:** exporta, copia como texto y restaura copias validadas. En web usa compartir/descarga según el navegador; en APK usa los plugins nativos indicados abajo. La app avisa si llevas más de 7 días sin copia.
+- **Historial:** mejor peso y sesiones por máquina.
+- **Copia de seguridad:** guarda una copia con un toque (menú compartir de iOS/Android), cópiala como texto o restáurala; la app te avisa si llevas más de 7 días sin copia.
 - **Tema:** negro con acento morado oscuro.
 
 ## Usarla en el móvil
@@ -19,27 +19,32 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 3. **iPhone (Safari):** Compartir → Añadir a pantalla de inicio.
    **Android (Chrome):** menú ⋮ → Instalar app.
 
-## Crear o actualizar el APK de Android (Capacitor)
-Ejecuta estos comandos desde la carpeta del proyecto. Si ya tienes el proyecto Capacitor creado, no repitas `npx cap init` ni `npx cap add android`.
-
+## Crear el APK de Android (Capacitor)
 ```bash
 npm init -y
-npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/filesystem @capacitor/share
+npm i @capacitor/core @capacitor/cli @capacitor/android
 npx cap init GymLog com.ariadnamoya.gymlog --web-dir=www
-mkdir -p www
-cp index.html manifest.webmanifest sw.js *.png www/
+mkdir www && cp index.html manifest.webmanifest sw.js *.png www/
 npx cap add android
-npx cap sync android
-npx cap open android
+npx cap open android   # Build → Build APK(s)
 ```
-
-**Cada vez que cambies `index.html`, `sw.js`, el manifiesto o los iconos:** copia los archivos actualizados a `www/` y ejecuta `npx cap sync android` antes de generar un APK nuevo. Si tu proyecto ya existe, instala los plugins con `npm i @capacitor/filesystem @capacitor/share` y ejecuta `npx cap sync android`.
-
-La copia nativa busca `Filesystem` y `Share` expuestos en `window.Capacitor.Plugins`. Si el proyecto usa una versión de Capacitor que no expone ese puente global, importa y registra ambos plugins en el punto de entrada JavaScript de tu proyecto; una página HTML sin empaquetar no puede importar directamente los módulos npm. En ese caso, prueba también la opción «Copiar texto» como alternativa.
-
 
 ## Iconos
 `icon-192.png`, `icon-512.png` y `apple-touch-icon.png` son reemplazables por los tuyos con el mismo nombre.
 
-## Datos
-Los datos se guardan en `localStorage` del navegador o WebView. La app intenta pedir almacenamiento persistente, pero el navegador puede no concederlo ni garantizar que los datos nunca se borren. Exporta copias periódicamente y guarda una fuera del dispositivo.
+## Datos y recuperación
+- Los datos se guardan en el dispositivo mediante `localStorage`; no se envían a ningún servidor.
+- Las copias exportadas incluyen `version: 1` para facilitar futuras migraciones.
+- Antes de importar una copia, GymLog comprueba la estructura de la rutina y valida las series (fecha, peso y repeticiones). Una copia no válida no sustituye los datos actuales.
+- Si el almacenamiento existente está dañado, la app muestra un aviso y bloquea nuevos guardados para evitar sobrescribirlo accidentalmente. Restaura una copia válida para continuar.
+- Si el navegador no permite guardar (por ejemplo, almacenamiento lleno), se muestra un aviso.
+- **Importante:** borrar los datos del navegador puede eliminar los entrenamientos. Guarda copias externas periódicas y comprueba que puedes restaurarlas.
+
+## Pruebas manuales recomendadas
+1. Exporta una copia y vuelve a importarla; comprueba que rutina e historial siguen iguales.
+2. Intenta importar un JSON sin `routine`, con una rutina de menos de siete días o con una serie de peso negativo/repeticiones cero; debe rechazarse sin reemplazar los datos actuales.
+3. Prueba un peso decimal con coma, por ejemplo `62,5`, y repeticiones `8`.
+4. Con el almacenamiento bloqueado o lleno, intenta guardar; la app debe mostrar un aviso.
+5. Abre la app en modo avión después de haberla cargado previamente y registra una serie.
+
+Estas comprobaciones automáticas y manuales son necesarias antes de considerar la fase de protección de datos completamente validada.
