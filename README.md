@@ -23,7 +23,7 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 ```bash
 npm init -y
 npm i @capacitor/core @capacitor/cli @capacitor/android
-npx cap init GymLog com.tunombre.gymlog --web-dir=www
+npx cap init GymLog com.ariadnamoya.gymlog --web-dir=www
 mkdir www && cp index.html manifest.webmanifest sw.js *.png www/
 npx cap add android
 npx cap open android   # Build → Build APK(s)
