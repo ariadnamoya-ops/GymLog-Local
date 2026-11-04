@@ -13,7 +13,7 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 
 ## Usarla en el móvil
 1. Activa GitHub Pages: *Settings → Pages → Deploy from a branch → `main` / `(root)`*.
-2. Abre `https://TU_USUARIO.github.io/gymlog/` en el móvil.
+2. Abre `https://ariadnamoya-ops.github.io/GymLog-Local/` en el móvil.
 3. **iPhone (Safari):** Compartir → Añadir a pantalla de inicio.
    **Android (Chrome):** menú ⋮ → Instalar app.
 
@@ -21,7 +21,7 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 ```bash
 npm init -y
 npm i @capacitor/core @capacitor/cli @capacitor/android
-npx cap init GymLog com.tunombre.gymlog --web-dir=www
+npx cap init GymLog com.ariadnamoya-ops.GymLog-Local --web-dir=www
 mkdir www && cp index.html manifest.webmanifest sw.js *.png www/
 npx cap add android
 npx cap open android   # Build → Build APK(s)
