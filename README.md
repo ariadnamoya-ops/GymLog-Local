@@ -187,4 +187,7 @@ Libre para uso personal. No requiere atribución.
 
 **¿Preguntas o sugerencias?** Abre un issue en GitHub
 
+commmit Trigger rebuild
+
+
 **¡Disfruta tus entrenamientos!** 💪🔥
