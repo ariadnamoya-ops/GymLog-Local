@@ -22,8 +22,11 @@ button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#
 .num{width:76px;text-align:center}
 .set{display:inline-block;background:var(--bg);border-radius:8px;padding:4px 9px;margin:6px 6px 0 0;font-weight:600}
 .set a{color:var(--mute);margin-left:4px;cursor:pointer}
-.chip{display:inline-flex;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:6px 6px 0 0;font-size:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:6px 6px 0 0;font-size:14px}
 .chip a{color:var(--mute);cursor:pointer}
+.ico{flex:none;fill:none;stroke:var(--acc2);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.ico .e{stroke:var(--mute)}
+.ib{border:0;background:none;padding:0;cursor:pointer;display:flex;flex:none}.lk{color:var(--acc2);font-size:14px;cursor:pointer}
+#mo{position:fixed;inset:0;background:rgba(0,0,0,.82);display:grid;place-items:center;padding:16px;z-index:9}#mo .card{width:100%;max-width:360px;text-align:center}#mo p{text-align:left;color:var(--mute);font-size:15px}.big{width:min(260px,70vw);height:auto;stroke-width:2}
 .today{border-left:5px solid var(--hi)}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
 nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-size:14px;font-weight:600;color:var(--mute)}
@@ -47,6 +50,65 @@ const td=(new Date().getDay()+6)%7;
 let v="hoy",cur=[],extra=[],hm="";
 const opts=l=>l.map(m=>`<option>${esc(m)}</option>`).join("");
 
+const IC={
+ban:'<path class="e" d="M10 44H50M16 44V56M44 44V56M12 16H36M12 13V19M36 13V19"/><circle cx="12" cy="37" r="4"/><path d="M17 39H42L50 46V56M24 39V16"/>',
+inc:'<path class="e" d="M14 38L33 52H48M26 14H44"/><circle cx="14" cy="28" r="4"/><path d="M18 32L36 45H46L48 57M24 37L35 14"/>',
+jal:'<path class="e" d="M32 3V13M16 13H48M24 46H44"/><circle cx="32" cy="22" r="4"/><path d="M32 27V44H42V58M32 30L20 13M32 30L44 13"/>',
+rem:'<path class="e" d="M46 36H60M20 46H34"/><circle cx="26" cy="18" r="4"/><path d="M27 23L26 42H40L46 50M27 28L36 36H46"/>',
+pre:'<path class="e" d="M6 56H58M52 22V50"/><circle cx="10" cy="46" r="4"/><path d="M14 44L28 36L40 24L50 34"/>',
+ext:'<path class="e" d="M20 12V46M20 46H44M51 25L57 31"/><circle cx="26" cy="14" r="4"/><path d="M26 19V40H42L54 28M26 24L33 33"/>',
+fem:'<path class="e" d="M6 42H50M12 42V54M44 42V54M44 20H52"/><circle cx="10" cy="35" r="4"/><path d="M15 37H48V20"/>',
+mil:'<path class="e" d="M24 46H46M20 8H44"/><circle cx="32" cy="22" r="4"/><path d="M32 27V44H42V58M32 31L24 22V8M32 31L40 22V8"/>',
+cur:'<path class="e" stroke-width="6" d="M43 25L49 19"/><circle cx="30" cy="10" r="4"/><path d="M30 15V38M30 38L24 58M30 38L36 58M30 19L34 32L44 23"/>',
+cin:'<path class="e" d="M6 58H50M54 58V30H44"/><circle cx="26" cy="12" r="4"/><path d="M27 17L31 34M28 21L38 26L34 31M31 34L41 42L35 53M31 34L21 43L12 50"/>',
+gen:'<path class="e" d="M18 32H46"/><path d="M12 24V40M18 20V44M52 24V40M46 20V44"/>'};
+function icKey(n){const s=n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+ const t=[["inclin","inc"],["banca|press plano","ban"],["jalon|dominada|polea alta","jal"],["remo","rem"],["prensa|sentadilla|hack","pre"],["extension|cuadriceps","ext"],["femoral|isquio|curl de pierna","fem"],["militar|hombro|elevacion","mil"],["curl|biceps","cur"],["cinta|correr|carrera|eliptica|cardio","cin"]];
+ for(const [r,k] of t)if(new RegExp(r).test(s))return k;return "gen"}
+const ico=(n,z=40)=>`<svg class="ico" viewBox="0 0 64 64" width="${z}" height="${z}" aria-hidden="true">${IC[icKey(n)]}</svg>`;
+const mv=(L,dx,dy)=>L.map(l=>[l,l.map((v,i)=>v+(i%2?dy:dx))]);
+const AN={
+ban:{s:"M10 44H50M16 44V56M44 44V56",h:[12,37],b:[[[17,39,42,39,50,46,50,56],[17,39,42,39,50,46,50,56]],[[24,39,31,34,24,29],[24,39,24,28,24,16]]],e:mv([[14,29,34,29],[14,26,14,32],[34,26,34,32]],0,-13)},
+inc:{s:"M14 38L33 52H48",h:[14,28],b:[[[18,32,36,45,46,45,48,57],[18,32,36,45,46,45,48,57]],[[24,37,32,35,27,29],[24,37,30,25,35,14]]],e:mv([[19,29,35,29]],8,-15)},
+jal:{s:"M24 46H44",h:[32,22],b:[[[32,27,32,44,42,44,42,58],[32,27,32,44,42,44,42,58]],[[32,30,26,21.5,20,13],[32,30,24,36,20,26]],[[32,30,38,21.5,44,13],[32,30,40,36,44,26]]],e:mv([[16,13,48,13]],0,13).concat([[[32,3,32,13],[32,3,32,26]]])},
+rem:{s:"M20 46H34",h:[26,18],b:[[[27,23,26,42,40,42,46,50],[27,23,26,42,40,42,46,50]],[[27,28,36,35,46,36],[27,28,24,37,35,35]]],e:[[[46,36,60,36],[35,35,60,36]]]},
+pre:{s:"M6 56H58",h:[10,47],b:[[[14,45,26,40],[14,45,26,40]],[[26,40,32,28,42,32],[26,40,39,32,52,24]]],e:mv([[38,25,46,39]],10,-8)},
+ext:{s:"M20 12V46M20 46H44",h:[26,14],b:[[[26,19,26,40,42,40],[26,19,26,40,42,40]],[[26,24,33,33],[26,24,33,33]],[[42,40,44,56],[42,40,54,28]]],e:[[[40,54,48,54],[51,25,57,31]]]},
+fem:{s:"M6 42H50M12 42V54M44 42V54",h:[10,35],b:[[[15,37,48,37],[15,37,48,37]],[[48,37,58,37],[48,37,48,20]]],e:[[[58,34,58,40],[44,20,52,20]]]},
+mil:{s:"M24 46H46",h:[32,22],b:[[[32,27,32,44,42,44,42,58],[32,27,32,44,42,44,42,58]],[[32,31,22,30,24,22],[32,31,24,20,24,8]],[[32,31,42,30,40,22],[32,31,40,20,40,8]]],e:mv([[20,22,44,22]],0,-14)},
+cur:{s:"",w:1,h:[30,10],b:[[[30,15,30,38],[30,15,30,38]],[[24,58,30,38,36,58],[24,58,30,38,36,58]],[[30,19,31,29,32,38],[30,19,34,32,44,23]]],e:[[[31,41,34,38],[43,25,49,19]]]},
+cin:{s:"M6 58H50M54 58V30H44",h:[26,12],b:[[[27,17,31,34],[27,17,31,34]],[[28,21,38,26,34,31],[28,21,20,28,26,33]],[[31,34,41,42,35,53],[31,34,21,43,12,50]],[[31,34,21,43,12,50],[31,34,41,42,35,53]]],e:[]},
+gen:{s:"",h:null,b:[],e:mv([[18,44,46,44],[12,36,12,52],[18,32,18,56],[52,36,52,52],[46,32,46,56]],0,-20)}};
+const TIP={
+ban:"Baja la barra al pecho con control y empuja hacia arriba sin bloquear los codos. Espalda apoyada en el banco.",
+inc:"Como el press de banca, pero el empuje va hacia arriba y un poco adelante. Codos a unos 45° del cuerpo.",
+jal:"Saca el pecho y tira de la barra hacia la parte alta del pecho, llevando los codos hacia abajo. No balancees el torso.",
+rem:"Espalda recta. Tira del agarre hacia el abdomen juntando los omóplatos y vuelve despacio sin encorvarte.",
+pre:"Pies a la anchura de los hombros. Baja hasta unos 90° en la rodilla y empuja sin despegar la zona lumbar del respaldo.",
+ext:"Estira la pierna del todo apretando el cuádriceps y baja despacio. Sin impulso.",
+fem:"Lleva los talones hacia los glúteos sin levantar la cadera del banco y baja de forma controlada.",
+mil:"Empuja sobre la cabeza sin arquear la espalda y baja hasta la altura de las orejas.",
+cur:"Codos pegados al cuerpo. Sube la mancuerna sin balancearte y baja despacio.",
+cin:"Torso erguido y mirada al frente. Apoya el pie bajo tu cuerpo y mantén los brazos a 90°, relajados.",
+gen:"Movimiento controlado: sube con fuerza y baja despacio, sin impulso. Si dudas de la técnica, pide ayuda a un monitor."};
+const dstr=a=>{let s="";for(let i=0;i<a.length;i+=2)s+=(i?"L":"M")+a[i].toFixed(1)+" "+a[i+1].toFixed(1);return s};
+const lerp=(a,b,p)=>a.map((v,i)=>v+(b[i]-v)*p);
+const frameD=(a,p)=>[...a.e,...a.b].map(([A,B])=>dstr(lerp(A,B,p)));
+let raf=0,play=true,ph=0,last=0;
+function demo(n){
+ closeDemo();const k=icKey(n),a=AN[k],w=a.w?' stroke-width="6"':"";
+ const mo=document.createElement("div");mo.id="mo";mo.onclick=e=>{if(e.target===mo)closeDemo()};
+ mo.innerHTML=`<div class="card" role="dialog" aria-label="Cómo se hace ${esc(n)}"><h3>${esc(n)}</h3><svg class="ico big" viewBox="0 0 64 64" role="img" aria-label="Animación del ejercicio"><path class="e" d="${a.s}"/>${a.e.map(()=>`<path class="e"${w}/>`).join("")}${a.b.map(()=>"<path/>").join("")}${a.h?`<circle cx="${a.h[0]}" cy="${a.h[1]}" r="4"/>`:""}</svg><p>${TIP[k]}</p><div class="row"><button class="grow" id="pp" onclick="togglePlay()">Pausar</button><button class="pri grow" onclick="closeDemo()">Cerrar</button></div></div>`;
+ document.body.appendChild(mo);
+ const P=[...mo.querySelectorAll("svg path")].slice(1);
+ play=!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);ph=0;last=performance.now();
+ if(!play)mo.querySelector("#pp").textContent="Reproducir";
+ const tick=now=>{if(!document.getElementById("mo"))return;if(play)ph=(ph+now-last)%3000;last=now;
+  const d=frameD(a,0.5-0.5*Math.cos(2*Math.PI*ph/3000));P.forEach((el,i)=>el.setAttribute("d",d[i]));raf=requestAnimationFrame(tick)};
+ raf=requestAnimationFrame(tick)}
+function togglePlay(){play=!play;document.getElementById("pp").textContent=play?"Pausar":"Reproducir"}
+function closeDemo(){cancelAnimationFrame(raf);const m=document.getElementById("mo");if(m)m.remove()}
+addEventListener("keydown",e=>{if(e.key==="Escape")closeDemo()});
 function hoy(){
  const k=key(),done=S.logs.filter(l=>l.d===k).map(l=>l.m);
  cur=[...new Set([...S.routine[td],...extra,...done])];
@@ -54,7 +116,7 @@ function hoy(){
  return nudge()+`<h1>${DAYS[td]}</h1><p class="mute">${S.routine[td].length?"Tu rutina de hoy":"Hoy no tienes máquinas asignadas"}</p>`+
  (cur.length?cur.map((m,i)=>{
   const mine=S.logs.filter(l=>l.d===k&&l.m===m),p=[...S.logs].reverse().find(l=>l.m===m&&l.d!==k);
-  return `<div class="card"><div class="row sp"><h3>${esc(m)}</h3><span class="mute">${p?`Última: ${p.kg} kg × ${p.r}`:"Sin historial"}</span></div>
+  return `<div class="card"><div class="row"><button class="ib" onclick="demo(cur[${i}])" aria-label="Ver cómo se hace">${ico(m,44)}</button><div class="grow"><h3>${esc(m)}</h3><span class="mute">${p?`Última: ${p.kg} kg × ${p.r}`:"Sin historial"}</span><div><a class="lk" onclick="demo(cur[${i}])">▶ Cómo se hace</a></div></div></div>
   <div>${mine.map(l=>`<span class="set">${l.kg} kg × ${l.r}<a onclick="delSet(${S.logs.indexOf(l)})">✕</a></span>`).join("")}</div>
   <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="number" inputmode="decimal" placeholder="kg" value="${mine.length?mine[mine.length-1].kg:p?p.kg:""}"><input class="num" id="r${i}" type="number" inputmode="numeric" placeholder="reps" value="${mine.length?mine[mine.length-1].r:p?p.r:""}"><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div></div>`}).join("")
   :`<div class="card mute">Día de descanso. Puedes asignar máquinas en Rutina o añadir una ahora.</div>`)+
@@ -63,12 +125,12 @@ function hoy(){
 function rutina(){
  return `<h1>Rutina semanal</h1><p class="mute">Elige qué máquinas haces cada día.</p>`+DAYS.map((d,i)=>{
   const rest=S.machines.filter(m=>!S.routine[i].includes(m));
-  return `<div class="card ${i===td?"today":""}"><h3>${d}</h3><div>${S.routine[i].length?S.routine[i].map((m,j)=>`<span class="chip">${esc(m)}<a onclick="delR(${i},${j})">✕</a></span>`).join(""):`<span class="mute">Descanso</span>`}</div>
+  return `<div class="card ${i===td?"today":""}"><h3>${d}</h3><div>${S.routine[i].length?S.routine[i].map((m,j)=>`<span class="chip">${ico(m,20)}${esc(m)}<a onclick="delR(${i},${j})">✕</a></span>`).join(""):`<span class="mute">Descanso</span>`}</div>
   ${rest.length?`<div class="row" style="margin-top:10px"><select class="grow" id="rs${i}">${opts(rest)}</select><button onclick="addR(${i})">Añadir</button></div>`:""}</div>`}).join("");
 }
 function maquinas(){
  return `<h1>Máquinas</h1>`+bk()+`<div class="card row"><input class="grow" id="nm" placeholder="Nueva máquina o ejercicio" onkeydown="if(event.key==='Enter')addM()"><button class="pri" onclick="addM()">Añadir</button></div>`+
- S.machines.map((m,i)=>`<div class="card row sp"><span>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("");
+ S.machines.map((m,i)=>`<div class="card row sp"><span class="row"><button class="ib" onclick="demo(S.machines[${i}])" aria-label="Ver cómo se hace">${ico(m,32)}</button>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("");
 }
 function historial(){
  if(!hm||!S.machines.includes(hm))hm=S.machines[0]||"";

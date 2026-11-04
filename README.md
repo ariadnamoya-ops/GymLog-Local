@@ -4,6 +4,8 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 
 ## Funciones
 - **Hoy:** las máquinas de tu rutina del día, con series de kg × repeticiones y lo que hiciste la última vez.
+- **Iconos:** cada ejercicio tiene un pictograma minimalista (se elige por el nombre; los desconocidos usan una mancuerna).
+- **Cómo se hace:** toca el icono de un ejercicio para ver una animación de 3 segundos en bucle y una pista de técnica (orientativa; ante dudas, pide ayuda a un monitor).
 - **Rutina:** asigna máquinas a cada día de la semana.
 - **Máquinas:** añade, renombra y borra.
 - **Progreso:** gráficas por máquina de mejor peso, volumen y 1RM estimado.
@@ -21,7 +23,7 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 ```bash
 npm init -y
 npm i @capacitor/core @capacitor/cli @capacitor/android
-npx cap init GymLog com.ariadnamoya-ops.GymLog-Local --web-dir=www
+npx cap init GymLog com.tunombre.gymlog --web-dir=www
 mkdir www && cp index.html manifest.webmanifest sw.js *.png www/
 npx cap add android
 npx cap open android   # Build → Build APK(s)
