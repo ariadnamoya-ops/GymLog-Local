@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2447F5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="GymLog">
+<title>GymLog</title>
+<style>
+:root{--bg:#EDF0F4;--card:#fff;--ink:#151C26;--mute:#667085;--acc:#2447F5;--hi:#FFD23F;--line:#D9DEE6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0F141B;--card:#19212C;--ink:#EEF1F5;--mute:#98A2B3;--acc:#6C8BFF;--line:#273140;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Roboto,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0)}
+main{max-width:520px;margin:0 auto;padding:16px 16px calc(90px + env(safe-area-inset-bottom,0))}
+h1,h2,h3{margin:0;font-family:"Arial Narrow","Roboto Condensed",system-ui,sans-serif;font-stretch:condensed;letter-spacing:.3px}
+h1{font-size:30px}h3{font-size:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.mute{color:var(--mute);font-size:14px}.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}.grow{flex:1}
+input,select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.num{width:76px;text-align:center}
+.set{display:inline-block;background:var(--bg);border-radius:8px;padding:4px 9px;margin:6px 6px 0 0;font-weight:600}
+.set a{color:var(--mute);margin-left:4px;cursor:pointer}
+.chip{display:inline-flex;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:6px 6px 0 0;font-size:14px}
+.chip a{color:var(--mute);cursor:pointer}
+.today{border-left:5px solid var(--hi)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-weight:600;color:var(--mute)}
+nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
+</style></head><body>
+<main id="app"></main><nav id="nav"></nav>
+<script>
+const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const def=()=>({machines:["Press de banca","Press inclinado","Jalón al pecho","Remo en polea","Prensa de piernas","Extensión de cuádriceps","Curl femoral","Press militar","Curl de bíceps","Cinta de correr"],
+routine:[["Press de banca","Press inclinado"],["Jalón al pecho","Remo en polea"],[],["Prensa de piernas","Extensión de cuádriceps","Curl femoral"],["Press militar","Curl de bíceps"],["Cinta de correr"],[]],logs:[]});
+let S;try{S=JSON.parse(localStorage.getItem("gymlog"))}catch(e){}
+S=S||def();
+const save=()=>{try{localStorage.setItem("gymlog",JSON.stringify(S))}catch(e){}};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=s=>document.querySelector(s);
+const key=()=>new Date().toLocaleDateString("sv");
+const td=(new Date().getDay()+6)%7;
+let v="hoy",cur=[],extra=[],hm="";
+const opts=l=>l.map(m=>`<option>${esc(m)}</option>`).join("");
+
+function hoy(){
+ const k=key(),done=S.logs.filter(l=>l.d===k).map(l=>l.m);
+ cur=[...new Set([...S.routine[td],...extra,...done])];
+ const rest=S.machines.filter(m=>!cur.includes(m));
+ return `<h1>${DAYS[td]}</h1><p class="mute">${S.routine[td].length?"Tu rutina de hoy":"Hoy no tienes máquinas asignadas"}</p>`+
+ (cur.length?cur.map((m,i)=>{
+  const mine=S.logs.filter(l=>l.d===k&&l.m===m),p=[...S.logs].reverse().find(l=>l.m===m&&l.d!==k);
+  return `<div class="card"><div class="row sp"><h3>${esc(m)}</h3><span class="mute">${p?`Última: ${p.kg} kg × ${p.r}`:"Sin historial"}</span></div>
+  <div>${mine.map(l=>`<span class="set">${l.kg} kg × ${l.r}<a onclick="delSet(${S.logs.indexOf(l)})">✕</a></span>`).join("")}</div>
+  <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="number" inputmode="decimal" placeholder="kg" value="${mine.length?mine[mine.length-1].kg:p?p.kg:""}"><input class="num" id="r${i}" type="number" inputmode="numeric" placeholder="reps" value="${mine.length?mine[mine.length-1].r:p?p.r:""}"><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div></div>`}).join("")
+  :`<div class="card mute">Día de descanso. Puedes asignar máquinas en Rutina o añadir una ahora.</div>`)+
+ (rest.length?`<div class="card row"><select class="grow" id="ex">${opts(rest)}</select><button onclick="addEx()">Añadir a hoy</button></div>`:"");
+}
+function rutina(){
+ return `<h1>Rutina semanal</h1><p class="mute">Elige qué máquinas haces cada día.</p>`+DAYS.map((d,i)=>{
+  const rest=S.machines.filter(m=>!S.routine[i].includes(m));
+  return `<div class="card ${i===td?"today":""}"><h3>${d}</h3><div>${S.routine[i].length?S.routine[i].map((m,j)=>`<span class="chip">${esc(m)}<a onclick="delR(${i},${j})">✕</a></span>`).join(""):`<span class="mute">Descanso</span>`}</div>
+  ${rest.length?`<div class="row" style="margin-top:10px"><select class="grow" id="rs${i}">${opts(rest)}</select><button onclick="addR(${i})">Añadir</button></div>`:""}</div>`}).join("");
+}
+function maquinas(){
+ return `<h1>Máquinas</h1><div class="card row"><input class="grow" id="nm" placeholder="Nueva máquina o ejercicio" onkeydown="if(event.key==='Enter')addM()"><button class="pri" onclick="addM()">Añadir</button></div>`+
+ S.machines.map((m,i)=>`<div class="card row sp"><span>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("")+
+ `<div class="card"><h3>Copia de seguridad</h3><p class="mute">Tus datos están solo en este dispositivo. Exporta un archivo para guardarlos o pasarlos a otro móvil.</p><div class="row"><button onclick="exp()">Exportar</button><label class="mute"><input type="file" accept=".json" onchange="imp(this)" style="max-width:200px"></label></div></div>`;
+}
+function historial(){
+ if(!hm||!S.machines.includes(hm))hm=S.machines[0]||"";
+ const L=S.logs.filter(l=>l.m===hm),days={};
+ L.forEach(l=>(days[l.d]=days[l.d]||[]).push(l));
+ const ds=Object.keys(days).sort().reverse(),best=L.reduce((a,l)=>Math.max(a,l.kg),0);
+ return `<h1>Historial</h1><div class="card"><select id="hs" style="width:100%" onchange="hm=this.value;render()">${S.machines.map(m=>`<option ${m===hm?"selected":""}>${esc(m)}</option>`).join("")}</select>
+ ${L.length?`<p class="mute">Mejor peso: <b>${best} kg</b> · ${ds.length} sesiones</p>`:""}</div>`+
+ (ds.length?ds.map(d=>`<div class="card"><div class="mute">${new Date(d+"T12:00").toLocaleDateString("es",{weekday:"long",day:"numeric",month:"short"})}</div>${days[d].map(l=>`<span class="set">${l.kg} kg × ${l.r}</span>`).join("")}</div>`).join(""):`<div class="card mute">Todavía no hay series de esta máquina.</div>`);
+}
+function render(){
+ $("#app").innerHTML={hoy,rutina,maquinas,historial}[v]();
+ $("#nav").innerHTML=[["hoy","Hoy"],["rutina","Rutina"],["maquinas","Máquinas"],["historial","Historial"]].map(([k,l])=>`<button class="${v===k?"on":""}" onclick="v='${k}';render();scrollTo(0,0)">${l}</button>`).join("");
+}
+function addSet(i){const kg=parseFloat($("#kg"+i).value),r=parseInt($("#r"+i).value);
+ if(isNaN(kg)||isNaN(r)){alert("Indica peso y repeticiones.");return}
+ S.logs.push({d:key(),m:cur[i],kg,r});save();render()}
+function delSet(i){S.logs.splice(i,1);save();render()}
+function addEx(){extra.push($("#ex").value);render()}
+function addR(i){const m=$("#rs"+i).value;S.routine[i].push(m);save();render()}
+function delR(i,j){S.routine[i].splice(j,1);save();render()}
+function addM(){const n=$("#nm").value.trim();if(!n||S.machines.includes(n))return;S.machines.push(n);save();render()}
+function delM(i){const m=S.machines[i];if(!confirm("¿Borrar "+m+"? Su historial se conserva.")) return;
+ S.machines.splice(i,1);S.routine=S.routine.map(r=>r.filter(x=>x!==m));save();render()}
+function renM(i){const o=S.machines[i],n=(prompt("Nuevo nombre",o)||"").trim();if(!n||n===o||S.machines.includes(n))return;
+ S.machines[i]=n;S.routine=S.routine.map(r=>r.map(x=>x===o?n:x));S.logs.forEach(l=>{if(l.m===o)l.m=n});save();render()}
+function exp(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="gymlog-"+key()+".json";a.click()}
+function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.machines||!d.routine||!d.logs)throw 0;S=d;save();render();alert("Datos importados")}catch(e){alert("Archivo no válido")}};r.readAsText(f)}
+render();
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script></body></html>
