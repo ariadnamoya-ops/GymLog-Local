@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2447F5">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="GymLog">
 <title>GymLog</title>
 <style>
-:root{--bg:#EDF0F4;--card:#fff;--ink:#151C26;--mute:#667085;--acc:#2447F5;--hi:#FFD23F;--line:#D9DEE6;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0F141B;--card:#19212C;--ink:#EEF1F5;--mute:#98A2B3;--acc:#6C8BFF;--line:#273140;color-scheme:dark}}
+:root{--bg:#000;--card:#131017;--ink:#F2EFF7;--mute:#9D95AD;--acc:#6A35C2;--acc2:#B794F4;--hi:#FFD23F;--line:#2B2535;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Roboto,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0)}
 main{max-width:520px;margin:0 auto;padding:16px 16px calc(90px + env(safe-area-inset-bottom,0))}
@@ -18,7 +17,7 @@ h1{font-size:30px}h3{font-size:18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
 .mute{color:var(--mute);font-size:14px}.row{display:flex;gap:8px;align-items:center}.sp{justify-content:space-between}.grow{flex:1}
 input,select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
-input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc2);outline-offset:1px}
 button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 .num{width:76px;text-align:center}
 .set{display:inline-block;background:var(--bg);border-radius:8px;padding:4px 9px;margin:6px 6px 0 0;font-weight:600}
@@ -29,9 +28,9 @@ button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
 nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-size:14px;font-weight:600;color:var(--mute)}
 .seg{display:flex;gap:6px;margin:10px 0}.seg button{flex:1;padding:8px 4px;font-size:14px}.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
-.ch{width:100%;height:auto;display:block}.ln{fill:none;stroke:var(--acc);stroke-width:2.5;stroke-linejoin:round}.gl{stroke:var(--line);stroke-width:1}.tx{fill:var(--mute);font-size:10px}.dt{fill:var(--card);stroke:var(--acc);stroke-width:2}.dl{fill:var(--hi);stroke:var(--acc);stroke-width:2}
+.ch{width:100%;height:auto;display:block}.ln{fill:none;stroke:var(--acc2);stroke-width:2.5;stroke-linejoin:round}.gl{stroke:var(--line);stroke-width:1}.tx{fill:var(--mute);font-size:10px}.dt{fill:var(--card);stroke:var(--acc2);stroke-width:2}.dl{fill:var(--hi);stroke:var(--acc2);stroke-width:2}
 .st{display:grid;grid-template-columns:1fr 1fr;gap:8px}.st .card{margin:0}.st b{font-size:22px;display:block}
-nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
+nav button.on{color:var(--acc2);box-shadow:inset 0 3px 0 var(--acc2)}
 </style></head><body>
 <main id="app"></main><nav id="nav"></nav>
 <script>
@@ -52,7 +51,7 @@ function hoy(){
  const k=key(),done=S.logs.filter(l=>l.d===k).map(l=>l.m);
  cur=[...new Set([...S.routine[td],...extra,...done])];
  const rest=S.machines.filter(m=>!cur.includes(m));
- return `<h1>${DAYS[td]}</h1><p class="mute">${S.routine[td].length?"Tu rutina de hoy":"Hoy no tienes máquinas asignadas"}</p>`+
+ return nudge()+`<h1>${DAYS[td]}</h1><p class="mute">${S.routine[td].length?"Tu rutina de hoy":"Hoy no tienes máquinas asignadas"}</p>`+
  (cur.length?cur.map((m,i)=>{
   const mine=S.logs.filter(l=>l.d===k&&l.m===m),p=[...S.logs].reverse().find(l=>l.m===m&&l.d!==k);
   return `<div class="card"><div class="row sp"><h3>${esc(m)}</h3><span class="mute">${p?`Última: ${p.kg} kg × ${p.r}`:"Sin historial"}</span></div>
@@ -68,9 +67,8 @@ function rutina(){
   ${rest.length?`<div class="row" style="margin-top:10px"><select class="grow" id="rs${i}">${opts(rest)}</select><button onclick="addR(${i})">Añadir</button></div>`:""}</div>`}).join("");
 }
 function maquinas(){
- return `<h1>Máquinas</h1><div class="card row"><input class="grow" id="nm" placeholder="Nueva máquina o ejercicio" onkeydown="if(event.key==='Enter')addM()"><button class="pri" onclick="addM()">Añadir</button></div>`+
- S.machines.map((m,i)=>`<div class="card row sp"><span>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("")+
- `<div class="card"><h3>Copia de seguridad</h3><p class="mute">Tus datos están solo en este dispositivo. Exporta un archivo para guardarlos o pasarlos a otro móvil.</p><div class="row"><button onclick="exp()">Exportar</button><label class="mute"><input type="file" accept=".json" onchange="imp(this)" style="max-width:200px"></label></div></div>`;
+ return `<h1>Máquinas</h1>`+bk()+`<div class="card row"><input class="grow" id="nm" placeholder="Nueva máquina o ejercicio" onkeydown="if(event.key==='Enter')addM()"><button class="pri" onclick="addM()">Añadir</button></div>`+
+ S.machines.map((m,i)=>`<div class="card row sp"><span>${esc(m)}</span><span><button onclick="renM(${i})">Renombrar</button> <button onclick="delM(${i})">Borrar</button></span></div>`).join("");
 }
 function historial(){
  if(!hm||!S.machines.includes(hm))hm=S.machines[0]||"";
@@ -124,9 +122,23 @@ function delM(i){const m=S.machines[i];if(!confirm("¿Borrar "+m+"? Su historial
  S.machines.splice(i,1);S.routine=S.routine.map(r=>r.filter(x=>x!==m));save();render()}
 function renM(i){const o=S.machines[i],n=(prompt("Nuevo nombre",o)||"").trim();if(!n||n===o||S.machines.includes(n))return;
  S.machines[i]=n;S.routine=S.routine.map(r=>r.map(x=>x===o?n:x));S.logs.forEach(l=>{if(l.m===o)l.m=n});save();render()}
-function exp(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="gymlog-"+key()+".json";a.click()}
-function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();
- r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.machines||!d.routine||!d.logs)throw 0;S=d;save();render();alert("Datos importados")}catch(e){alert("Archivo no válido")}};r.readAsText(f)}
+function ago(){if(!S.lastBackup)return "Aún no has hecho ninguna copia";const n=Math.floor((Date.now()-S.lastBackup)/864e5);return "Última copia: "+(n<=0?"hoy":n===1?"ayer":"hace "+n+" días")}
+function nudge(){if(S.logs.length<5||(S.lastBackup&&Date.now()-S.lastBackup<7*864e5))return "";
+ return `<div class="card row sp today"><span class="mute">${ago()}</span><button class="pri" onclick="exp()">Guardar copia</button></div>`}
+function bk(){return `<div class="card"><h3>Copia de seguridad</h3><p class="mute">${ago()}. Tus datos solo están en este móvil. Guarda una copia en Archivos, iCloud, WhatsApp o el correo.</p>
+ <button class="pri" style="width:100%" onclick="exp()">Guardar copia</button>
+ <div class="row" style="margin-top:8px"><button class="grow" onclick="cpy()">Copiar texto</button><button class="grow" onclick="pas()">Pegar texto</button></div>
+ <label class="row" style="margin-top:8px"><span class="mute">Restaurar archivo</span><input class="grow" type="file" accept=".json,application/json" onchange="imp(this)"></label></div>`}
+function mark(){S.lastBackup=Date.now();save();render()}
+async function exp(){const name="gymlog-"+key()+".json",txt=JSON.stringify(S);
+ try{const f=new File([txt],name,{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Copia GymLog"});mark();return}}catch(e){if(e&&e.name==="AbortError")return}
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"}));a.download=name;a.click();mark()}
+async function cpy(){try{await navigator.clipboard.writeText(JSON.stringify(S));mark();alert("Copiado. Pégalo en una nota o en un mensaje a ti mismo.")}catch(e){alert("No se pudo copiar. Usa Guardar copia.")}}
+function pas(){const t=prompt("Pega aquí el texto de tu copia");if(t)load(t)}
+function load(t){try{const d=JSON.parse(t);if(!d.machines||!d.routine||!d.logs)throw 0;if(!confirm("Esto reemplaza tus datos actuales. ¿Continuar?"))return;S=d;save();render();alert("Datos restaurados")}catch(e){alert("La copia no es válida")}}
+function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>load(r.result);r.readAsText(f);el.value=""}
 render();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script></body></html>

@@ -8,11 +8,12 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 - **Máquinas:** añade, renombra y borra.
 - **Progreso:** gráficas por máquina de mejor peso, volumen y 1RM estimado.
 - **Historial:** mejor peso y sesiones por máquina.
-- **Copia de seguridad:** exporta e importa un archivo `.json`.
+- **Copia de seguridad:** guarda una copia con un toque (menú compartir de iOS/Android), cópiala como texto o restáurala; la app te avisa si llevas más de 7 días sin copia.
+- **Tema:** negro con acento morado oscuro.
 
 ## Usarla en el móvil
 1. Activa GitHub Pages: *Settings → Pages → Deploy from a branch → `main` / `(root)`*.
-2. Abre `https://ariadnamoya-ops.github.io/GymLog-Local/` en el móvil.
+2. Abre `https://TU_USUARIO.github.io/gymlog/` en el móvil.
 3. **iPhone (Safari):** Compartir → Añadir a pantalla de inicio.
    **Android (Chrome):** menú ⋮ → Instalar app.
 
