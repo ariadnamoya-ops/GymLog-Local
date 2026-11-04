@@ -27,7 +27,10 @@ button{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#
 .chip a{color:var(--mute);cursor:pointer}
 .today{border-left:5px solid var(--hi)}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
-nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-weight:600;color:var(--mute)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-size:14px;font-weight:600;color:var(--mute)}
+.seg{display:flex;gap:6px;margin:10px 0}.seg button{flex:1;padding:8px 4px;font-size:14px}.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.ch{width:100%;height:auto;display:block}.ln{fill:none;stroke:var(--acc);stroke-width:2.5;stroke-linejoin:round}.gl{stroke:var(--line);stroke-width:1}.tx{fill:var(--mute);font-size:10px}.dt{fill:var(--card);stroke:var(--acc);stroke-width:2}.dl{fill:var(--hi);stroke:var(--acc);stroke-width:2}
+.st{display:grid;grid-template-columns:1fr 1fr;gap:8px}.st .card{margin:0}.st b{font-size:22px;display:block}
 nav button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 </style></head><body>
 <main id="app"></main><nav id="nav"></nav>
@@ -78,9 +81,36 @@ function historial(){
  ${L.length?`<p class="mute">Mejor peso: <b>${best} kg</b> · ${ds.length} sesiones</p>`:""}</div>`+
  (ds.length?ds.map(d=>`<div class="card"><div class="mute">${new Date(d+"T12:00").toLocaleDateString("es",{weekday:"long",day:"numeric",month:"short"})}</div>${days[d].map(l=>`<span class="set">${l.kg} kg × ${l.r}</span>`).join("")}</div>`).join(""):`<div class="card mute">Todavía no hay series de esta máquina.</div>`);
 }
+let pm="",met="kg";
+function progreso(){
+ const ms=S.machines.filter(m=>S.logs.some(l=>l.m===m));
+ if(!ms.length)return `<h1>Progreso</h1><div class="card mute">Registra series en Hoy y aquí verás cómo evolucionas en cada máquina.</div>`;
+ if(!ms.includes(pm))pm=ms[0];
+ const by={};S.logs.filter(l=>l.m===pm).forEach(l=>(by[l.d]=by[l.d]||[]).push(l));
+ const ds=Object.keys(by).sort();
+ const F={kg:a=>Math.max(...a.map(l=>l.kg)),vol:a=>a.reduce((s,l)=>s+l.kg*l.r,0),rm:a=>Math.max(...a.map(l=>l.kg*(1+l.r/30)))};
+ const P=ds.map(d=>({d,y:Math.round(F[met](by[d])*10)/10}));
+ const W=320,H=190,L=40,R=12,T=14,B=26,ys=P.map(p=>p.y);
+ let lo=Math.min(...ys),hi=Math.max(...ys);if(hi===lo){lo=Math.max(0,lo-5);hi+=5}
+ const pad=(hi-lo)*.1;lo=Math.max(0,lo-pad);hi+=pad;
+ const X=i=>P.length===1?(L+W-R)/2:L+i*(W-L-R)/(P.length-1),Y=y=>T+(hi-y)*(H-T-B)/(hi-lo);
+ const fd=d=>d.slice(8)+"/"+d.slice(5,7);
+ let g="";for(let k=0;k<4;k++){const y=lo+(hi-lo)*k/3,yy=Y(y);g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><text class="tx" x="${L-6}" y="${yy+3}" text-anchor="end">${Math.round(y)}</text>`}
+ const line=P.length>1?`<polyline class="ln" points="${P.map((p,i)=>X(i)+","+Y(p.y)).join(" ")}"/>`:"";
+ const dots=P.map((p,i)=>`<circle class="${i===P.length-1?"dl":"dt"}" cx="${X(i)}" cy="${Y(p.y)}" r="4"/>`).join("");
+ const xl=`<text class="tx" x="${X(0)}" y="${H-8}" text-anchor="${P.length>1?"start":"middle"}">${fd(P[0].d)}</text>`+(P.length>1?`<text class="tx" x="${X(P.length-1)}" y="${H-8}" text-anchor="end">${fd(P[P.length-1].d)}</text>`:"");
+ const first=P[0].y,last=P[P.length-1].y,diff=Math.round((last-first)*10)/10,pct=first?Math.round((last-first)/first*100):0;
+ const best=Math.max(...S.logs.filter(l=>l.m===pm).map(l=>l.kg));
+ const lab={kg:"Mejor peso por sesión",vol:"Volumen por sesión (kg × reps)",rm:"1RM estimado (fórmula Epley)"}[met];
+ return `<h1>Progreso</h1><div class="card"><select id="ps" style="width:100%" onchange="pm=this.value;render()">${ms.map(m=>`<option ${m===pm?"selected":""}>${esc(m)}</option>`).join("")}</select>
+ <div class="seg">${[["kg","Peso"],["vol","Volumen"],["rm","1RM"]].map(([k,l])=>`<button class="${met===k?"on":""}" onclick="met='${k}';render()">${l}</button>`).join("")}</div>
+ <div class="mute">${lab}</div><svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica de progreso de ${esc(pm)}">${g}${line}${dots}${xl}</svg></div>
+ <div class="st"><div class="card"><span class="mute">Cambio</span><b>${diff>0?"+":""}${diff} kg</b><span class="mute">${P.length>1?(pct>0?"+":"")+pct+"% desde el inicio":"Necesitas 2 sesiones"}</span></div>
+ <div class="card"><span class="mute">Mejor peso</span><b>${best} kg</b><span class="mute">${ds.length} sesiones</span></div></div>`;
+}
 function render(){
- $("#app").innerHTML={hoy,rutina,maquinas,historial}[v]();
- $("#nav").innerHTML=[["hoy","Hoy"],["rutina","Rutina"],["maquinas","Máquinas"],["historial","Historial"]].map(([k,l])=>`<button class="${v===k?"on":""}" onclick="v='${k}';render();scrollTo(0,0)">${l}</button>`).join("");
+ $("#app").innerHTML={hoy,rutina,maquinas,progreso,historial}[v]();
+ $("#nav").innerHTML=[["hoy","Hoy"],["rutina","Rutina"],["maquinas","Máquinas"],["progreso","Progreso"],["historial","Historial"]].map(([k,l])=>`<button class="${v===k?"on":""}" onclick="v='${k}';render();scrollTo(0,0)">${l}</button>`).join("");
 }
 function addSet(i){const kg=parseFloat($("#kg"+i).value),r=parseInt($("#r"+i).value);
  if(isNaN(kg)||isNaN(r)){alert("Indica peso y repeticiones.");return}

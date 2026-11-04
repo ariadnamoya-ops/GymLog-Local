@@ -6,6 +6,7 @@ App web para registrar tus entrenos en el gimnasio: máquinas, pesos y repeticio
 - **Hoy:** las máquinas de tu rutina del día, con series de kg × repeticiones y lo que hiciste la última vez.
 - **Rutina:** asigna máquinas a cada día de la semana.
 - **Máquinas:** añade, renombra y borra.
+- **Progreso:** gráficas por máquina de mejor peso, volumen y 1RM estimado.
 - **Historial:** mejor peso y sesiones por máquina.
 - **Copia de seguridad:** exporta e importa un archivo `.json`.
 
