@@ -14,14 +14,14 @@ Una aplicación web progresiva (PWA) para registrar y hacer seguimiento de tus e
 - **Gráficas de progreso**: 3 métricas (peso máximo, volumen, 1RM estimado)
 - **Comparación de ejercicios**: Visualiza múltiples ejercicios en una gráfica
 - **Resumen semanal**: Estadísticas de series, volumen y ejercicios únicos
-- **Exportar a CSV**: Descarga tus datos para análisis avanzado
+- **Exportar a CSV**: Descarga el historial de un ejercicio, listo para abrir en Excel (separador `;`, decimales con coma y UTF-8)
 
 ### 🎯 Herramientas de Entrenamiento
-- **Temporizador de descanso**: 90 segundos con vibración al finalizar
+- **Temporizador de descanso**: 90 segundos con vibración al finalizar (solo en dispositivos que la soportan, como Android; iOS no)
 - **Animaciones de ejercicios**: Aprende la técnica correcta
 - **Plantillas de ejercicios**: Pre-llena pesos y repeticiones recomendadas
 - **Superseries**: Agrupa ejercicios para entrenamientos más intensos
-- **Notas por serie**: Registra cómo te sentiste o detalles técnicos
+- **Notas por serie**: Pulsa 📝 junto a "Añadir serie" para anotar cómo te sentiste o detalles técnicos
 
 ### 🎨 Experiencia de Usuario
 - **Tema claro/oscuro**: Cambia según tu preferencia
@@ -67,7 +67,7 @@ Una aplicación web progresiva (PWA) para registrar y hacer seguimiento de tus e
 ### Registrar series
 1. Introduce peso (kg) y repeticiones
 2. Presiona **Enter** o clic en "Añadir serie"
-3. Añade una nota opcional si quieres
+3. Si quieres, pulsa 📝 y escribe una nota antes de añadir la serie
 4. ¡El récord personal se celebra automáticamente! 🏆
 
 ### Ver tu progreso
@@ -78,11 +78,11 @@ Una aplicación web progresiva (PWA) para registrar y hacer seguimiento de tus e
 ### Configurar temporizador
 1. Toca **⏱ Descanso** junto al ejercicio
 2. El temporizador cuenta 90 segundos
-3. Vibra al terminar (en móviles)
+3. Vibra al terminar (en Android; iOS no permite vibración desde la web)
 
 ## 🛠️ Características Técnicas
 
-- **Tamaño**: ~70 KB (archivo único HTML)
+- **Tamaño**: ~50 KB (un solo `index.html`, más manifest, service worker e iconos)
 - **Formato de datos**: JSON versionado (v2)
 - **Almacenamiento**: localStorage (5 MB límite típico)
 - **Compatibilidad PWA**: manifest.webmanifest + service worker
@@ -118,7 +118,7 @@ Una aplicación web progresiva (PWA) para registrar y hacer seguimiento de tus e
 ## 🔧 Personalización
 
 ### Cambiar ejercicios predeterminados
-Edita la línea 73 en `index.html`:
+Edita la función `def()` al principio del `<script>` de `index.html`:
 ```javascript
 machines:["Tu ejercicio 1","Tu ejercicio 2",...]
 ```
@@ -144,11 +144,33 @@ const MAX_BACKUP_BYTES=5*1024*1024;  // Límite de backup
 - Refresca la página
 - Limpia la caché del navegador
 
+**He borrado una máquina y su historial ha desaparecido**
+- El historial no se borra, pero queda oculto en Progreso e Historial. Vuelve a crear la máquina con exactamente el mismo nombre y reaparecerá.
+
+**El CSV se abre en una sola columna**
+- El archivo usa `;` como separador (el habitual en Excel en español). Si tu Excel está en otro idioma, usa Datos → Texto en columnas y elige `;`.
+
 **No se sincroniza entre pestañas**
 - Solo funciona en el mismo navegador
 - Las pestañas en modo incógnito están aisladas
 
 ## 📝 Changelog
+
+### v2.1 (Noviembre 2026)
+- ✅ Superseries: el botón "+ Añadir otro" funciona
+- ✅ Resumen semanal calculado en hora local (fallaba de 00:00 a 02:00 en España)
+- ✅ Se pueden borrar plantillas dejando peso y repeticiones vacíos
+- ✅ Sin falso aviso de "datos antiguos" tras hacer una copia de seguridad
+- ✅ El temporizador se pone verde al llegar a 0
+- ✅ Récords: un solo aviso por récord y 🏆 solo en las series que lo fueron
+- ✅ Las notas se escriben en un campo (📝) en lugar de una ventana emergente
+- ✅ Cancelar al editar una serie ya no borra su nota
+- ✅ CSV compatible con Excel en español (`;`, coma decimal, UTF-8) y protegido contra fórmulas
+- ✅ Descargas más fiables en Safari
+- ✅ Botón de tema, avisos y notificaciones respetan la zona segura de iOS
+- ✅ Aviso "Sin conexión" también al abrir la app sin red
+- ✅ Service worker: ya no falla sin conexión con archivos no cacheados y solo guarda respuestas correctas
+- ✅ Manifest: iconos `any` y `maskable` separados, sin capturas de pantalla falsas
 
 ### v2.0 (Noviembre 2026)
 - ✅ Corrección de 8 bugs críticos
@@ -170,7 +192,7 @@ Este es un proyecto de archivo único HTML para máxima portabilidad. Si quieres
 
 1. Mantén todo en un solo archivo `index.html`
 2. Añade tests para funciones críticas
-3. Documenta cambios en BUGS_FIXED.md
+3. Documenta los cambios en el changelog de este README
 4. Incrementa el número de versión en el JSON
 
 ## 📄 Licencia
@@ -186,8 +208,5 @@ Libre para uso personal. No requiere atribución.
 ---
 
 **¿Preguntas o sugerencias?** Abre un issue en GitHub
-
-commmit Trigger rebuild
-
 
 **¡Disfruta tus entrenamientos!** 💪🔥

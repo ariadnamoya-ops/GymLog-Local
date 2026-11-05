@@ -54,13 +54,13 @@ textarea{width:100%;min-height:60px;resize:vertical;font-size:14px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .summary .card{text-align:center;padding:10px}
 .summary .card b{font-size:20px;display:block;margin-top:4px}
-.offline{position:fixed;top:8px;right:8px;background:var(--err);color:#fff;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;z-index:10;animation:slideIn .3s}
-@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.offline{position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--err);color:#fff;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;z-index:10;animation:slideIn .3s}
+@keyframes slideIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 .superset{border-left:3px solid var(--acc2);padding-left:8px;margin-left:4px}
 .compare-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
-.theme-toggle{position:fixed;top:12px;right:12px;background:var(--card);border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;transition:all .3s}
+.theme-toggle{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;background:var(--card);border:1px solid var(--line);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;transition:all .3s}
 .theme-toggle:hover{transform:rotate(180deg)}
-.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:11;animation:toastIn .3s;max-width:90vw}
+.toast{position:fixed;top:calc(70px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:11;animation:toastIn .3s;max-width:90vw}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .toast.success{border-color:var(--success);background:var(--card)}
 .toast.error{border-color:var(--err);background:var(--card)}
@@ -87,6 +87,8 @@ const MAX_MACHINES=500;
 let storageWarning="";
 
 function validDate(s){if(typeof s!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+"T12:00:00");return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===s}
+
+function canon(o){return JSON.stringify(o,(k,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v)}
 
 function normalizeState(raw,{strict=false}={}){
  if(!raw||typeof raw!=="object"||Array.isArray(raw))throw new Error("La copia no contiene un objeto válido.");
@@ -131,7 +133,7 @@ function loadFromStorage(){
    try{
     const parsed=JSON.parse(stored);
     S=normalizeState(parsed);
-    if(JSON.stringify(parsed)!==JSON.stringify(S))storageWarning="Se han detectado datos antiguos o incompletos. Se han recuperado los registros válidos; revisa y guarda una copia de seguridad.";
+    if(canon(parsed)!==canon(S))storageWarning="Se han detectado datos antiguos o incompletos. Se han recuperado los registros válidos; revisa y guarda una copia de seguridad.";
    }catch(e){
     storageLocked=true;
     storageWarning="No se han podido leer los datos guardados. La aplicación ha abierto una rutina vacía para evitar bloquearse. No se guardarán cambios hasta que restaures una copia válida.";
@@ -152,6 +154,7 @@ addEventListener("storage",e=>{
  }
 });
 
+if(!navigator.onLine)document.addEventListener("DOMContentLoaded",()=>{$("#offline").style.display="block"});
 addEventListener("online",()=>$("#offline").style.display="none");
 addEventListener("offline",()=>$("#offline").style.display="block");
 
@@ -169,7 +172,8 @@ const save=()=>{
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const escJS=t=>String(t).replace(/[\\'"`]/g,c=>'\\'+c);
 const $=s=>document.querySelector(s);
-const key=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const fmtD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const key=()=>fmtD(new Date());
 const getTodayIndex=()=>(new Date().getDay()+6)%7;
 let v="hoy",cur=[],extra=[],hm="",timerInt=null,timerEnd=0;
 const opts=l=>l.map(m=>`<option>${esc(m)}</option>`).join("");
@@ -296,7 +300,7 @@ function updateTimer(){
  const sec=Math.ceil(left/1000);
  const m=Math.floor(sec/60),s=sec%60;
  el.textContent=`${m}:${String(s).padStart(2,"0")}`;
- el.className=sec<=10?"timer warn":sec===0?"timer done":"timer";
+ el.className=sec===0?"timer done":sec<=10?"timer warn":"timer";
  if(sec===0){
   if(navigator.vibrate)navigator.vibrate([200,100,200]);
   setTimeout(closeTimer,2000);
@@ -308,9 +312,14 @@ function updateTimer(){
 function closeTimer(){clearTimeout(timerInt);const m=document.getElementById("mo");if(m)m.remove()}
 
 function isPR(m,kg){
- const today=key();
- const prev=S.logs.filter(l=>l.m===m&&l.d!==today).map(l=>l.kg);
+ const prev=S.logs.filter(l=>l.m===m).map(l=>l.kg);
  return prev.length>0&&kg>Math.max(...prev);
+}
+
+function prSet(m){
+ const s=new Set();let max=-1;
+ for(const l of S.logs){if(l.m!==m)continue;if(max>=0&&l.kg>max)s.add(l);if(l.kg>max)max=l.kg}
+ return s;
 }
 
 function showPR(m){
@@ -334,11 +343,12 @@ function hoy(){
   const prev=S.logs.filter(l=>l.m===m&&l.d<k).sort((a,b)=>b.d.localeCompare(a.d))[0];
   const allForMachine=S.logs.filter(l=>l.m===m).map(l=>l.kg);
   const pr=allForMachine.length>0?Math.max(...allForMachine):0;
+  const prs=prSet(m);
   const tmpl=S.templates[m];
   const isSS=S.supersets.some(ss=>ss.includes(m));
   return `<div class="card ${isSS?"superset":""}"><div class="row"><button class="ib" onclick="demo(cur[${i}])" aria-label="Ver cómo se hace">${ico(m,44)}</button><div class="grow"><h3>${esc(m)}${pr&&mine.length?`<span class="badge">PR: ${pr}kg</span>`:""}</h3><span class="mute">${prev?`Última: ${prev.kg} kg × ${prev.r}`:tmpl?`Recomendado: ${tmpl.kg} kg × ${tmpl.r}`:"Sin historial"}</span><div><a class="lk" onclick="demo(cur[${i}])">▶ Cómo se hace</a> · <a class="lk" onclick="startTimer(90)">⏱ Descanso</a></div></div></div>
-  <div>${mine.map((l,j)=>{const idx=S.logs.indexOf(l);const isPr=l.kg===pr&&pr>0;return `<span class="set ${isPr?"pr":""}">${l.kg} kg × ${l.r}${isPr?" 🏆":""}<a onclick="editSet(${idx})" title="Editar">✎</a><a onclick="delSet(${idx})" title="Borrar">✕</a></span>`}).join("")}${mine.some(l=>l.note)?mine.filter(l=>l.note).map(l=>`<div class="note">"${esc(l.note)}"</div>`).join(""):""}</div>
-  <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="kg" onkeydown="addSetWithEnter(event,${i})" value="${mine.length?mine[mine.length-1].kg:prev?prev.kg:tmpl?tmpl.kg:""}"><input class="num" id="r${i}" type="number" inputmode="numeric" placeholder="reps" onkeydown="addSetWithEnter(event,${i})" value="${mine.length?mine[mine.length-1].r:prev?prev.r:tmpl?tmpl.r:""}"><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div></div>`}).join("")
+  <div>${mine.map((l,j)=>{const idx=S.logs.indexOf(l);const isPr=prs.has(l);return `<span class="set ${isPr?"pr":""}">${l.kg} kg × ${l.r}${isPr?" 🏆":""}<a onclick="editSet(${idx})" title="Editar">✎</a><a onclick="delSet(${idx})" title="Borrar">✕</a></span>`}).join("")}${mine.some(l=>l.note)?mine.filter(l=>l.note).map(l=>`<div class="note">"${esc(l.note)}"</div>`).join(""):""}</div>
+  <div class="row" style="margin-top:8px"><input class="num" id="kg${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="kg" onkeydown="addSetWithEnter(event,${i})" value="${mine.length?mine[mine.length-1].kg:prev?prev.kg:tmpl?tmpl.kg:""}"><input class="num" id="r${i}" type="number" inputmode="numeric" placeholder="reps" onkeydown="addSetWithEnter(event,${i})" value="${mine.length?mine[mine.length-1].r:prev?prev.r:tmpl?tmpl.r:""}"><button class="ib" style="font-size:20px" onclick="toggleNote(${i})" aria-label="Añadir nota" title="Nota">📝</button><button class="pri grow" onclick="addSet(${i})">Añadir serie</button></div><input id="n${i}" maxlength="200" placeholder="Nota (opcional)" style="display:none;width:100%;margin-top:8px" onkeydown="addSetWithEnter(event,${i})"></div>`}).join("")
   :`<div class="card mute">Día de descanso. Puedes asignar máquinas en Rutina o añadir una ahora.</div>`)+
  (rest.length?`<div class="card row"><select class="grow" id="ex">${opts(rest)}</select><button onclick="addEx()">Añadir a hoy</button></div>`:"");
 }
@@ -363,9 +373,15 @@ function addSS(){
  <select id="ss1" style="width:100%;margin:8px 0">${opts}</select>
  <select id="ss2" style="width:100%;margin:8px 0">${opts}</select>
  <div id="ssExtra"></div>
- <button style="width:100%" onclick="const ex=document.getElementById('ssExtra');const sel=document.createElement('select');sel.style.width='100%';sel.style.margin='8px 0';sel.innerHTML=\`${opts}\`;ex.appendChild(sel)">+ Añadir otro</button>
+ <button style="width:100%" onclick="addSSExtra()">+ Añadir otro</button>
  <div class="row" style="margin-top:12px"><button class="grow" onclick="this.closest('#mo').remove()">Cancelar</button><button class="pri grow" onclick="saveSS()">Guardar</button></div></div>`;
  document.body.appendChild(mo);
+}
+
+function addSSExtra(){
+ const sel=document.createElement("select");sel.style.width="100%";sel.style.margin="8px 0";
+ S.machines.forEach((m,i)=>{const o=document.createElement("option");o.value=i;o.textContent=m;sel.appendChild(o)});
+ document.getElementById("ssExtra").appendChild(sel);
 }
 
 function saveSS(){
@@ -394,10 +410,11 @@ function setTemplate(i){
  if(kg===null)return;
  const r=prompt(`Repeticiones recomendadas para ${m}:`,t?t.r:"");
  if(r===null)return;
+ if(!kg.trim()&&!r.trim()){delete S.templates[m];save();toast("Plantilla eliminada","success");render();return}
  const kgNum=Number(kg.trim().replace(",","."));
  const rNum=Number(r.trim());
  if(!Number.isFinite(kgNum)||kgNum<0||!Number.isInteger(rNum)||rNum<=0){alert("Valores no válidos");return}
- if(kgNum===0&&rNum===0){delete S.templates[m]}else{S.templates[m]={kg:kgNum,r:rNum}}
+ S.templates[m]={kg:kgNum,r:rNum};
  save();render();
 }
 
@@ -415,15 +432,15 @@ function historial(){
 function exportCSV(m){
  const L=S.logs.filter(l=>l.m===m).sort((a,b)=>a.d.localeCompare(b.d));
  if(!L.length){alert("No hay datos para exportar");return}
- let csv="Fecha,Peso (kg),Repeticiones,Nota\n";
- L.forEach(l=>csv+=`${l.d},${l.kg},${l.r},"${(l.note||"").replace(/"/g,'""')}"\n`);
- const blob=new Blob([csv],{type:"text/csv"});
+ let csv="\uFEFFFecha;Peso (kg);Repeticiones;Nota\n";
+ L.forEach(l=>{let n=(l.note||"").replace(/[\r\n]+/g," ");if(/^[=+\-@\t]/.test(n))n="'"+n;csv+=`${l.d};${String(l.kg).replace(".",",")};${l.r};"${n.replace(/"/g,'""')}"\n`});
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
  const url=URL.createObjectURL(blob);
  const a=document.createElement("a");
  a.href=url;
  a.download=`${m.replace(/[^a-z0-9]/gi,"_")}_${key()}.csv`;
  a.click();
- setTimeout(()=>URL.revokeObjectURL(url),100);
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 
 let pm="",met="kg",compareMode=false,compareMachines=[];
@@ -507,7 +524,7 @@ function resumen(){
  const td=getTodayIndex();
  const weekStart=new Date();
  weekStart.setDate(weekStart.getDate()-(weekStart.getDay()+6)%7);
- const wk=weekStart.toISOString().slice(0,10);
+ const wk=fmtD(weekStart);
  const weekLogs=S.logs.filter(l=>l.d>=wk);
  const todayLogs=S.logs.filter(l=>l.d===today);
  const totalSets=weekLogs.length;
@@ -521,7 +538,7 @@ function resumen(){
  <div class="card"><h3>Esta semana (desde ${DAYS[(weekStart.getDay()+6)%7]})</h3>${DAYS.map((d,i)=>{
   const date=new Date(weekStart);
   date.setDate(date.getDate()+i);
-  const ds=date.toISOString().slice(0,10);
+  const ds=fmtD(date);
   const count=S.logs.filter(l=>l.d===ds).length;
   return `<div class="row sp"><span class="mute">${d}</span><span>${count} series</span></div>`;
  }).join("")}</div>`;
@@ -541,7 +558,7 @@ function addSet(i){
  if(!Number.isInteger(r)||r<=0||r>1000||isNaN(r)){alert("Las repeticiones deben ser un número entero entre 1 y 1000.");return}
  const m=cur[i];
  const wasPR=isPR(m,kg);
- const note=prompt("Nota opcional (deja vacío para omitir):");
+ const nEl=$("#n"+i);const note=nEl?nEl.value:"";
  const entry={d:key(),m,kg,r};
  if(note&&note.trim())entry.note=note.trim().slice(0,200);
  S.logs.push(entry);
@@ -550,6 +567,13 @@ function addSet(i){
   else toast("Serie añadida","success");
   render();
  }
+}
+
+function toggleNote(i){
+ const n=$("#n"+i);if(!n)return;
+ const show=n.style.display==="none";
+ n.style.display=show?"block":"none";
+ if(show)n.focus();
 }
 
 function addSetWithEnter(e,i){
@@ -566,7 +590,8 @@ function editSet(i){
  if(kgNew===null)return;
  const rNew=prompt("Nuevas repeticiones:",l.r);
  if(rNew===null)return;
- const note=prompt("Nota (deja vacío para quitar):",l.note||"");
+ const noteIn=prompt("Nota (deja vacío para quitar):",l.note||"");
+ const note=noteIn===null?(l.note||""):noteIn;
  const kg=Number(kgNew.trim().replace(",","."));
  const r=Number(rNew.trim());
  if(!Number.isFinite(kg)||kg<0){alert("Introduce un peso válido igual o superior a 0 kg.");return}
@@ -652,7 +677,7 @@ async function exp(){
  a.href=url;
  a.download=name;
  a.click();
- setTimeout(()=>URL.revokeObjectURL(url),100);
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
  mark();
 }
 
